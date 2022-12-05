@@ -4,35 +4,38 @@
 #define MPI 1
 #define LOCAL_BUFF_SIZE 64
 
-int find_min(int* vec, int n)
+int dot_product(int* vec1, int* vec2, int n)
 {
-    int min_val = INT_MAX;
+    int res = 0;
     for (int i = 0; i < n; i++) {
-        if (min_val >= vec[i])
-            min_val = vec[i];
+        res += vec1[i] * vec2[i];
     }
-    return min_val;
+    return res;
 }
 
-int find_min_mpi(int* vec, int n)
+int dot_product_mpi(int* vec1, int* vec2, int n)
 {
     int size, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    int *buf = (int*)malloc(sizeof(int) * n / size);
+    int *buf = (int*)malloc(sizeof(int) * n * 2 / size);
     int res_buf[LOCAL_BUFF_SIZE];
 
-    int local_min = INT_MAX;
-    MPI_Scatter(vec, n / size, MPI_INT, buf, n / size, MPI_INT, 0, MPI_COMM_WORLD);
+    int res = 0;
+    MPI_Scatter(vec1, n / size, MPI_INT, buf, n / size, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatter(vec2, n / size, MPI_INT, buf + n / size, n / size, MPI_INT, 0, MPI_COMM_WORLD);
     for (int i = 0; i < n / size; i++) {
-        if (local_min >= buf[i])
-            local_min = buf[i];
+        res += buf[i] * buf[i + n / size];
     }
-    MPI_Gather(&local_min, 1, MPI_INT, res_buf, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gather(&res, 1, MPI_INT, res_buf, 1, MPI_INT, 0, MPI_COMM_WORLD);
     free(buf);
 
     if (rank == 0) {
-        return find_min(res_buf, size);
+        int total_res = 0;
+        for (int i = 0; i < size; i++) {
+                total_res += res_buf[i];
+        }
+        return total_res;
     }
 }
 
@@ -41,15 +44,17 @@ static long results_seq[NUM_ITER];
 
 static int test(int n, int iter)
 {
-    int rank, min1, min2;
-    int *vec;
+    int rank, res1, res2;
+    int *vec1, *vec2;
     struct timeval begin, end;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (rank == 0) {
-        vec = (int*)malloc(sizeof(int) * n);
-        rand_fill_vec_int(vec, n);
+        vec1 = (int*)malloc(sizeof(int) * n);
+        vec2 = (int*)malloc(sizeof(int) * n);
+        rand_fill_vec_int(vec1, n);
+        rand_fill_vec_int(vec2, n);
         gettimeofday(&begin, 0);
-        min1 = find_min(vec, n);
+        res1 = dot_product(vec1, vec2, n);
         gettimeofday(&end, 0);
         long seconds = end.tv_sec - begin.tv_sec;
         long microseconds = end.tv_usec - begin.tv_usec;
@@ -59,19 +64,21 @@ static int test(int n, int iter)
     if (rank == 0) {
         gettimeofday(&begin, 0);
     }
-    min2 = find_min_mpi(vec, n);
+    res2 = dot_product_mpi(vec1, vec2, n);
     if (rank == 0) {
         gettimeofday(&end, 0);
         long seconds = end.tv_sec - begin.tv_sec;
         long microseconds = end.tv_usec - begin.tv_usec;
         long elapsed = seconds * 1e6 + microseconds;
-        if (min1 != min2) {
-            printf("fail !!! seq min: %d; mpi min: %d\n", min1, min2);
-            free(vec);
+        if (res1 != res2) {
+            printf("fail !!! seq res: %d; mpi res: %d\n", res1, res2);
+            free(vec1);
+            free(vec2);
             return 1;
         }
         results_mpi[iter] = elapsed;
-        free(vec);
+        free(vec1);
+        free(vec2);
         return 0;
     }
     return 0;
