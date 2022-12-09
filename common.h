@@ -13,6 +13,8 @@
 #define RAND_OFFSET -500000
 
 #define MAX_STR_LEN 64
+#define M 1000000
+#define LOCAL_BUFF_SIZE 64
 
 void rand_fill_vec_int(int* vec, int n);
 int** alloc_sqr_mat(int n);

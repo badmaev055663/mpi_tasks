@@ -2,7 +2,6 @@
 
 #define SEQ 0
 #define MPI 1
-#define LOCAL_BUFF_SIZE 64
 
 int dot_product(int* vec1, int* vec2, int n)
 {
@@ -18,17 +17,17 @@ int dot_product_mpi(int* vec1, int* vec2, int n)
     int size, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    int *buf = (int*)malloc(sizeof(int) * n * 2 / size);
+    int *buf1 = (int*)malloc(sizeof(int) * n / size);
+    int *buf2 = (int*)malloc(sizeof(int) * n / size);
     int res_buf[LOCAL_BUFF_SIZE];
 
-    int res = 0;
-    MPI_Scatter(vec1, n / size, MPI_INT, buf, n / size, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Scatter(vec2, n / size, MPI_INT, buf + n / size, n / size, MPI_INT, 0, MPI_COMM_WORLD);
-    for (int i = 0; i < n / size; i++) {
-        res += buf[i] * buf[i + n / size];
-    }
+    MPI_Scatter(vec1, n / size, MPI_INT, buf1, n / size, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatter(vec2, n / size, MPI_INT, buf2, n / size, MPI_INT, 0, MPI_COMM_WORLD);
+    int res = dot_product(buf1, buf2, n / size);
+    
     MPI_Gather(&res, 1, MPI_INT, res_buf, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    free(buf);
+    free(buf1);
+    free(buf2);
 
     if (rank == 0) {
         int total_res = 0;
@@ -118,11 +117,11 @@ static void big_test(int n)
 int main(int argc, char *argv[])
 {
     MPI_Init(NULL, NULL);
-    big_test(500000);
-    big_test(1000000);
-    big_test(2000000);
-    big_test(5000000);
-    big_test(10000000);
+    big_test(M);
+    big_test(2 * M);
+    big_test(5 * M);
+    big_test(10 * M);
+    big_test(20 * M);
     MPI_Finalize();
  
     return 0;

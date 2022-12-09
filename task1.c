@@ -2,7 +2,6 @@
 
 #define SEQ 0
 #define MPI 1
-#define LOCAL_BUFF_SIZE 64
 
 int find_min(int* vec, int n)
 {
@@ -111,11 +110,11 @@ static void big_test(int n)
 int main(int argc, char *argv[])
 {
     MPI_Init(NULL, NULL);
-    big_test(500000);
-    big_test(1000000);
-    big_test(2000000);
-    big_test(5000000);
-    big_test(10000000);
+    big_test(M);
+    big_test(2 * M);
+    big_test(5 * M);
+    big_test(10 * M);
+    big_test(20 * M);
     MPI_Finalize();
  
     return 0;
