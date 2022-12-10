@@ -1,7 +1,5 @@
 #include "common.h"
 
-#define SEQ 0
-#define MPI 1
 
 int dot_product(int* vec1, int* vec2, int n)
 {

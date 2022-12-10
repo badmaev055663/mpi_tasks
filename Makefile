@@ -16,5 +16,9 @@ task2: task2.c $(HEADERS) $(SRC)
 
 task3: task3.c $(HEADERS) $(SRC)
 	$(CC) $(SRC) task3.c -o $(OUT_DIR)/task3
+
+task5: task5.c $(HEADERS) $(SRC)
+	$(CC) $(SRC) task5.c -o $(OUT_DIR)/task5
+
 clean:
 	rm -rf $(OUT_DIR)

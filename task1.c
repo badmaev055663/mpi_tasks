@@ -1,7 +1,5 @@
 #include "common.h"
 
-#define SEQ 0
-#define MPI 1
 
 int find_min(int* vec, int n)
 {

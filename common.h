@@ -17,5 +17,3 @@
 #define LOCAL_BUFF_SIZE 64
 
 void rand_fill_vec_int(int* vec, int n);
-int** alloc_sqr_mat(int n);
-void free_sqr_mat(int **mat, int n);
